@@ -1,3 +1,42 @@
+# Athanor BOOM: Verifiable Out-of-Order RISC-V Optimization
+
+This fork is the Athanor campaign surface for BOOM, a generator-first
+out-of-order 64-bit RISC-V core. It exists alongside
+[`openc910-athanor`](https://github.com/athanor-ai/openc910-athanor): OpenC910
+is the direct-RTL track, while BOOM requires generated RTL/config capture before
+the same replay-packet discipline can apply.
+
+The operating rule for this fork is receipt-first. Results land on `master` with
+explicit links to artifact packages, replay commands, hashes, and proof/test
+logs. A row is not a win until its exact proof subject is stated and replayable.
+
+## Athanor Results
+
+| Target | Status | Optimization / PPA | Proof, test, or simulation receipt | Receipt location |
+| --- | --- | --- | --- | --- |
+| BOOM generated RTL/config capture | In progress | No optimization claimed | Blocking receipt: this repo is generator-first; first packet requires a pinned Chipyard hash/config, generated Verilog, and replayable synthesis/proof commands | Pending `athanor_artifacts/generated_rtl_capture/` |
+| First BOOM module-local packet | Pending | No optimization claimed | Candidate target will be selected after generated RTL is pinned; expected proof bar is selected PPA plus same-state equivalence or visible-output relation proof with biting mutant | Pending |
+
+## BOOM Campaign Plan
+
+1. Capture a reproducible BOOM generated-RTL configuration using the tracked
+   `CHIPYARD.hash` and an explicit generator command.
+2. Package generated RTL provenance under `athanor_artifacts/` with hashes and
+   replay instructions.
+3. Select a tractable module-local target from the generated RTL.
+4. Run Kairos plus specialist agents for candidate generation, authoritative
+   scoring, proof, adversarial QA, and campaign-learning records.
+5. Promote only rows with exact receipt links in the table above.
+
+## Non-Claims
+
+This fork does not currently claim a BOOM optimization, whole BOOM proof, ISA
+correctness, memory consistency, speculation recovery, or whole-chip authority.
+Until generated RTL/config is pinned, BOOM is a generator-capture track, not a
+proof-packet track.
+
+## Upstream README
+
 ![](docs/figures/evolution.png)
 
 The Berkeley Out-of-Order RISC-V Processor [![CircleCI](https://circleci.com/gh/riscv-boom/riscv-boom.svg?style=svg)](https://circleci.com/gh/riscv-boom/riscv-boom)
