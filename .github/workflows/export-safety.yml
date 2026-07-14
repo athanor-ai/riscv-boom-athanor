@@ -47,6 +47,17 @@ jobs:
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: python3 athanor/export_safety_gate.py --ref HEAD
 
+      # Public receipt INTEGRITY (auditor-grade): SHA256SUMS binds every shipped
+      # file (present->listed, not just listed->present), each metric-claiming
+      # packet ships a self-checking replay.sh, and every AREA a receipt claims
+      # is parsed from a SHA-bound pinned log -- never self-certified. Reads the
+      # committed tree, so it runs on the same PR/push gate (not comment events).
+      # (Boom is capture-track: no proof packets yet -> the verifier is a clean
+      # no-op today, and enforces the same auditor bar the moment packets land.)
+      - name: Verify public receipt integrity (SHA256SUMS binding + replay + receipt-to-log)
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        run: python3 athanor/verify_public_receipts.py
+
       # PR body + review/issue comments are public surfaces the committed-tree
       # scan cannot see. Scan them with the SAME BLOCK_ALWAYS set (single source
       # of truth: export_safety_gate.py --scan-text). Runs on PR events AND on
