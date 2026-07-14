@@ -1,41 +1,45 @@
-# Athanor BOOM: Verifiable Out-of-Order RISC-V Optimization
+# Athanor BOOM: Generator-Capture Track
 
-This fork is the Athanor campaign surface for BOOM, a generator-first
-out-of-order 64-bit RISC-V core. It exists alongside
-[`openc910-athanor`](https://github.com/athanor-ai/openc910-athanor): OpenC910
-is the direct-RTL track, while BOOM requires generated RTL/config capture before
-the same replay-packet discipline can apply.
+This fork is the Athanor public surface for BOOM, a generator-first
+out-of-order 64-bit RISC-V core. Unlike OpenC910, BOOM does not expose a single
+direct RTL tree as the proof subject; the first required artifact is a pinned
+generated-RTL/config package.
 
-The operating rule for this fork is receipt-first. Results land on `master` with
-explicit links to artifact packages, replay commands, hashes, and proof/test
-logs. A row is not a win until its exact proof subject is stated and replayable.
+## Current Status
 
-## Athanor Results
+| Question | Current answer |
+| --- | --- |
+| Is there a promoted BOOM optimization? | No. No BOOM optimization row is promoted yet. |
+| What is the first receipt? | Generated RTL/config capture: pinned Chipyard hash, generator command, generated Verilog hashes, and replay instructions. |
+| What will a promoted row require? | Same-candidate selected area, OpenSTA max data-arrival, OpenSTA estimated power, scoped proof, proof mutant, and independent replay. |
+| Where will receipts live? | Under [`athanor_artifacts/`](athanor_artifacts/) once capture and module packets land. |
 
-| Target | Status | Optimization / PPA | Proof, test, or simulation receipt | Receipt location |
-| --- | --- | --- | --- | --- |
-| BOOM generated RTL/config capture | In progress | No optimization claimed | Blocking receipt: this repo is generator-first; first packet requires a pinned Chipyard hash/config, generated Verilog, and replayable synthesis/proof commands | Pending `athanor_artifacts/generated_rtl_capture/` |
-| First BOOM module-local packet | Pending | No optimization claimed | Candidate target will be selected after generated RTL is pinned; expected proof bar is selected PPA plus same-state equivalence or visible-output relation proof with biting mutant | Pending |
+## Promotion Rule
 
-## BOOM Campaign Plan
+Future BOOM rows follow the same bar as OpenC910:
 
-1. Capture a reproducible BOOM generated-RTL configuration using the tracked
-   `CHIPYARD.hash` and an explicit generator command.
-2. Package generated RTL provenance under `athanor_artifacts/` with hashes and
-   replay instructions.
-3. Select a tractable module-local target from the generated RTL.
-4. Run Kairos plus specialist agents for candidate generation, authoritative
-   scoring, proof, adversarial QA, and campaign-learning records.
-5. Promote only rows with exact receipt links in the table above.
+1. exact generated RTL/config provenance,
+2. area/timing/OpenSTA estimated-power measurements on the same mapped candidate
+   netlist,
+3. same-state equivalence or visible-output/state-relation proof with stated
+   reset/environment assumptions,
+4. a proof negative-control that fails the same proof,
+5. hash-bound replay plus independent non-author review.
+
+Lean obligations should be generated for state-relation or composition gaps:
+`reset_establishes`, `transition_preserves`, and
+`relation_implies_visible_outputs`, with a weakened-relation or theorem mutant
+that fails.
 
 ## Non-Claims
 
 This fork does not currently claim a BOOM optimization, whole BOOM proof, ISA
-correctness, memory consistency, speculation recovery, or whole-chip authority.
-Until generated RTL/config is pinned, BOOM is a generator-capture track, not a
-proof-packet track.
+correctness, memory consistency, speculation recovery, signoff/workload power,
+or whole-chip authority. Until generated RTL/config is pinned, BOOM is a
+capture track, not a proof-packet track.
 
-## Upstream README
+<details>
+<summary>Upstream BOOM README</summary>
 
 ![](docs/figures/evolution.png)
 
@@ -51,7 +55,7 @@ The current version of the BOOM microarchitecture ([SonicBOOM, or BOOMv3](https:
 
 
 Feature | BOOM
---- | ---
+:-- | :--
 ISA | RISC-V (RV64GCB)
 Synthesizable |√
 FPGA |√
@@ -105,3 +109,5 @@ BOOM is a work-in-progress and remains in active development.
 ## Contributing
 
 Please see [CONTRIB\_AND\_STYLE.md](/CONTRIB_AND_STYLE.md)
+
+</details>
