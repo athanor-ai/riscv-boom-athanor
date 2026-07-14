@@ -12,3 +12,7 @@ lib
 /out/
 util/csmith/output/
 util/csmith/csmith/
+
+# ATH-2960 export-safety
+*.replay.log
+replay_out/
