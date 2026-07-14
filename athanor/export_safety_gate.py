@@ -24,6 +24,7 @@ Two tiers (customer-surface owner ruling, ATH-2960):
            - tmp / tool-cache paths
            - the cloud build username
            - the internal ops-repo name
+           - confidential customer names
            - secret tokens (GitHub, Slack, AWS, OpenAI/Anthropic, private keys)
 
   WARN   conscious-choice internal metadata; surfaced, never blocks:
@@ -72,6 +73,8 @@ BLOCK_ALWAYS: list[tuple[str, str]] = [
     ("internal workdir path", "/work" + "dir"),
     ("cloud build username", "azure" + "user"),
     ("internal ops repo", "athanor-" + "kairos-runall"),
+    ("confidential customer name", r"[Nn][Vv][Ii][Dd][Ii][Aa]"),
+    ("confidential customer name", r"[Aa][Nn][Nn][Aa][Pp][Uu][Rr][Nn][Aa]"),
     ("GitHub token", r"gh[posru]_[A-Za-z0-9]{20,}"),
     ("GitHub fine-grained PAT", r"github_pat_[A-Za-z0-9_]{20,}"),
     ("Slack token", r"xox[baprs]-[A-Za-z0-9-]{10,}"),
