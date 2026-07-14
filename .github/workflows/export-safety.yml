@@ -2,16 +2,29 @@ name: export-safety
 
 # ATH-2960: fail-closed export-safety gate for this PUBLIC fork.
 # Runs the committed-tree leak scan + receipt verifier on every PR and every
-# push to main. Intended to be a REQUIRED status check (branch protection).
+# push to main, AND scans the PR body + conversation/review comments on every
+# event that can ADD text to those public surfaces:
+#   - pull_request opened/synchronize/reopened/EDITED  (body edits)
+#   - issue_comment created/edited                     (conversation comments)
+#   - pull_request_review_comment created/edited       (diff review comments)
+# Trigger-surface hardening (ATH-2960 extension): a leak added via a later
+# body-edit or a new comment lives on a public surface; the scan is only as
+# good as the events that fire it. Intended to be a REQUIRED status check.
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
+  issue_comment:
+    types: [created, edited]
+  pull_request_review_comment:
+    types: [created, edited]
   push:
     branches: [master]
 
 permissions:
   contents: read
   pull-requests: read
+  issues: read
 
 jobs:
   export-safety:
@@ -27,23 +40,43 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Committed-tree scan only runs where the tree can change (PR / push).
+      # Comment events do not change the tree; on those the checkout is the
+      # default branch, so a committed-tree scan there would be misleading.
       - name: Export-safety gate (committed-tree leak scan + receipt verifier)
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: python3 athanor/export_safety_gate.py --ref HEAD
 
-      # PR bodies + review/issue comments are public surfaces the committed-tree
-      # scan cannot see. Scan them with the same BLOCK_ALWAYS set (single source
-      # of truth). PR text is passed via env, never interpolated into the shell,
-      # to avoid script injection.
-      - name: Export-safety PR-text scan (PR body + comments)
-        if: github.event_name == 'pull_request'
+      # PR body + review/issue comments are public surfaces the committed-tree
+      # scan cannot see. Scan them with the SAME BLOCK_ALWAYS set (single source
+      # of truth: export_safety_gate.py --scan-text). Runs on PR events AND on
+      # PR comment events (conversation + review-diff), confined to real PRs.
+      #
+      # Two-layer input so an API-sweep failure can never MASK the triggering
+      # surface:
+      #   (1) payload text for THIS event (always present for its event type):
+      #       PR_BODY on pull_request, COMMENT_BODY on a comment event.
+      #   (2) a full live API sweep (body + all conversation + all review
+      #       comments) as defense-in-depth; its failure is swallowed (|| true)
+      #       and therefore cannot hide a leak found in (1).
+      # Both feed one --scan-text (verdict=exit1, tool-error=exit2, clean=exit0).
+      # Text is passed via env, never interpolated into the shell (injection-safe).
+      - name: Export-safety PR-text scan (body + conversation + review comments)
+        if: >
+          github.event_name == 'pull_request' ||
+          (github.event_name == 'issue_comment' && github.event.issue.pull_request) ||
+          github.event_name == 'pull_request_review_comment'
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_BODY: ${{ github.event.pull_request.body }}
-          PR: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number || github.event.issue.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           {
             printf '%s\n' "$PR_BODY"
+            printf '%s\n' "$COMMENT_BODY"
+            gh api "repos/$REPO/pulls/$PR" --jq '.body' 2>/dev/null || true
             gh api "repos/$REPO/issues/$PR/comments" --jq '.[].body' 2>/dev/null || true
             gh api "repos/$REPO/pulls/$PR/comments" --jq '.[].body' 2>/dev/null || true
           } | python3 athanor/export_safety_gate.py --scan-text

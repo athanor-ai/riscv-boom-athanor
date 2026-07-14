@@ -246,9 +246,18 @@ def main(argv: list[str] | None = None) -> int:
     # PR bodies / review + issue comments are public surfaces on a public fork that
     # the committed-tree scan cannot see. Scan them with the SAME BLOCK_ALWAYS set.
     if args.scan_text:
+        # Any failure to READ the text is a TOOL-ERROR (exit 2, legible
+        # inconclusive), never a verdict (exit 1) or a clean pass (exit 0).
+        # A closed/absent stdin makes sys.stdin None -> .read() raises
+        # AttributeError (not OSError), and read-on-closed raises ValueError;
+        # collapse all of these to the tool-error code so a broken input can
+        # never masquerade as "leak found" or "clean".
+        if sys.stdin is None:
+            print("GATE-ERROR: no stdin available for --scan-text", file=sys.stderr)
+            return 2
         try:
             text = sys.stdin.read()
-        except OSError as exc:
+        except (OSError, ValueError, AttributeError) as exc:
             print(f"GATE-ERROR: could not read text from stdin: {exc}", file=sys.stderr)
             return 2
         findings = scan_text(text)
