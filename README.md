@@ -5,6 +5,15 @@ out-of-order 64-bit RISC-V core. Unlike OpenC910, BOOM does not expose a single
 direct RTL tree as the proof subject; the first required artifact is a pinned
 generated-RTL/config package.
 
+How the work divides (the same across every Athanor fork): the AI generates the
+optimization proposals and scaffolding; open, formal tools generate the verdicts
+(Yosys equivalence, OpenSTA timing/power, Lean invariants); and Kairos supplies
+the contract, routing, binding, ledger, and claim discipline. Kairos does not
+replace the prover or the model -- it binds an exact candidate to its
+measurements and proofs and refuses to promote anything that skips the bar. The
+promotion rule below is that discipline; no BOOM row is promoted until it clears
+every step.
+
 ## Current Status
 
 | Question | Current answer |
