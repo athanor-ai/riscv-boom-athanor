@@ -40,6 +40,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install test runner (receipt-verifier bites)
+        run: python3 -m pip install --quiet pytest
+
       # Committed-tree scan only runs where the tree can change (PR / push).
       # Comment events do not change the tree; on those the checkout is the
       # default branch, so a committed-tree scan there would be misleading.
@@ -57,6 +60,17 @@ jobs:
       - name: Verify public receipt integrity (SHA256SUMS binding + replay + receipt-to-log)
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: python3 athanor/verify_public_receipts.py
+
+      # The verifier is a no-op today (boom is capture-track: no proof packets yet),
+      # so its enforcement power is invisible until packets land. These bites hold
+      # the auditor bar ALWAYS-RUN: they build synthetic customer-ready packets in
+      # tmp and assert the verifier rejects candidate-drift, renamed-container/axis
+      # PPA smuggling (ATH-2982), unbound SHA256SUMS entries, non-distinct red
+      # controls, SHA256SUMS path-escape, and passes a valid packet — so a mutation
+      # to the verifier reds here even while boom ships no real packets.
+      - name: Verify receipt-integrity bites (verifier is subject-under-test)
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        run: python3 -m pytest tests/test_verify_public_receipts.py -q
 
       # PR body + review/issue comments are public surfaces the committed-tree
       # scan cannot see. Scan them with the SAME BLOCK_ALWAYS set (single source
