@@ -72,6 +72,15 @@ jobs:
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: python3 -m pytest tests/test_verify_public_receipts.py -q
 
+      # Export-safety GATE bites (the leak-scanner is subject-under-test): a
+      # committed test is un-gated unless the runner names it, so pin it here
+      # beside the verifier bites. Covers the kairos.<ns> namespace BLOCK, the
+      # case/hyphen-widened ticket WARN, tier-preservation, and the seeded-secret
+      # sole-discriminator bite; a mutation to the gate patterns reds here.
+      - name: Export-safety gate bites (leak scanner is subject-under-test)
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        run: python3 -m pytest tests/test_export_safety_gate.py -q
+
       # PR body + review/issue comments are public surfaces the committed-tree
       # scan cannot see. Scan them with the SAME BLOCK_ALWAYS set (single source
       # of truth: export_safety_gate.py --scan-text). Runs on PR events AND on
