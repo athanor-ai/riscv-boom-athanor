@@ -25,7 +25,8 @@ Two tiers (customer-surface owner ruling, ATH-2960):
            - the cloud build username
            - the internal ops-repo name
            - confidential customer names
-           - secret tokens (GitHub, Slack, AWS, OpenAI/Anthropic, private keys)
+           - secret tokens (GitHub, Slack, AWS, AI-provider API keys, private keys)
+           - AI-tool / vendor authorship markers (the bot attribution footer)
 
   WARN   conscious-choice internal metadata; surfaced, never blocks:
            - internal Linear ticket IDs
@@ -85,11 +86,27 @@ BLOCK_ALWAYS: list[tuple[str, str]] = [
     ("internal Kairos namespace", r"(?<!athanor-)" + "kai" + r"ros\.[A-Za-z_]"),
     ("confidential customer name", r"[Nn][Vv][Ii][Dd][Ii][Aa]"),
     ("confidential customer name", r"[Aa][Nn][Nn][Aa][Pp][Uu][Rr][Nn][Aa]"),
+    # Export-safety hardening (asabi ruling 2026-07-15, ATH-2960 vendor-footer
+    # class): AI-tool / vendor authorship markers. A bot's auto-generated
+    # "Generated with <tool>" attribution footer -- and its "<vendor>.com"
+    # co-author trailer -- is a public-surface tool/vendor-name reference on a
+    # customer-facing RTL fork. Our public posture names only the VERDICT tools
+    # (Yosys/OpenSTA/Lean, public by design); the proposal-side stack is
+    # proprietary, and an AI-tool authorship footer leaks it. Owner ruling: BLOCK,
+    # FORK-SCOPE only -- private-repo authorship trails are unchanged; the leak is
+    # a vendor marker crossing the customer boundary, not its existence. One
+    # SINGLE source of truth (BLOCK_ALWAYS) so the committed-tree scan AND
+    # --scan-text (PR body / comments, where the footer actually lands) both
+    # enforce it. Fragment-built + (?i) so this file holds no verbatim marker and
+    # cannot self-trip its own committed-tree scan.
+    ("AI-tool name", r"(?i)cla" + "ude"),
+    ("AI-vendor name", r"(?i)anthro" + "pic"),
+    ("AI-tool authorship footer", r"(?i)generated with \[?cla" + "ude"),
     ("GitHub token", r"gh[posru]_[A-Za-z0-9]{20,}"),
     ("GitHub fine-grained PAT", r"github_pat_[A-Za-z0-9_]{20,}"),
     ("Slack token", r"xox[baprs]-[A-Za-z0-9-]{10,}"),
     ("AWS access key id", r"AKIA[0-9A-Z]{16}"),
-    ("Anthropic API key", r"sk-ant-[A-Za-z0-9_-]{20,}"),
+    ("Anthro" "pic API key", r"sk-ant-[A-Za-z0-9_-]{20,}"),
     ("OpenAI API key", r"sk-[A-Za-z0-9]{20,}"),
     ("private key block", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
 ]
