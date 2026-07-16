@@ -73,6 +73,16 @@ BLOCK_ALWAYS: list[tuple[str, str]] = [
     ("internal workdir path", "/work" + "dir"),
     ("cloud build username", "azure" + "user"),
     ("internal ops repo", "athanor-" + "kairos-runall"),
+    # Export-safety hardening (Quan): the internal project namespace used as a
+    # schema or module PATH -- e.g. a receipt "schema": "<ns>.<ticket>..." or a
+    # "from <ns>.sub import ..." line. A public fork has no legitimate reason to
+    # carry an internal module/schema path (owner ruling: BLOCK, fail-closed; any
+    # future legit case goes through the audited allowlist, not a weakened
+    # pattern). The repo POINTER "athanor-<ns>" stays WARN below; the
+    # (?<!athanor-) lookbehind keeps this BLOCK from reclassifying the pointer's
+    # dotted forms. Fragment-built so this file holds no verbatim marker and does
+    # not self-trip its own committed-tree scan.
+    ("internal Kairos namespace", r"(?<!athanor-)" + "kai" + r"ros\.[A-Za-z_]"),
     ("confidential customer name", r"[Nn][Vv][Ii][Dd][Ii][Aa]"),
     ("confidential customer name", r"[Aa][Nn][Nn][Aa][Pp][Uu][Rr][Nn][Aa]"),
     ("GitHub token", r"gh[posru]_[A-Za-z0-9]{20,}"),
@@ -99,7 +109,11 @@ OUR_ADDED_PREFIXES: tuple[str, ...] = (
 
 # --- WARN tier: (label, extended-regex, exclude-regex-or-None). Never blocks.
 WARN_PATTERNS: list[tuple[str, str, str | None]] = [
-    ("internal Linear ticket id", r"ATH-[0-9]{4}", None),
+    # Case-insensitive + hyphen-optional (owner ruling: stays WARN): a producer
+    # that emits "ath2852" (lowercase, no hyphen -- the natural machine form in a
+    # schema/module segment) evaded the old case+hyphen-pinned "ATH-[0-9]{4}". The
+    # leading \b keeps it off in-word digits like "datapath2960".
+    ("internal Linear ticket id", r"(?i)\b" + "ath" + r"-?[0-9]{4}", None),
     # The private-repo pointer is WARN, but the internal ops-repo name is BLOCK;
     # exclude the ops-repo hits here so they are not double-reported as a warn.
     ("private Kairos-repo pointer", "athanor-" + "kairos", "athanor-" + "kairos-runall"),
