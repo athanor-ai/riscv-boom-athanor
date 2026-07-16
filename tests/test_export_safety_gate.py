@@ -27,6 +27,12 @@ NS = "kai" + "ros"            # internal project namespace
 WD = "/work" + "dir"         # internal build path
 POINTER = "athanor-" + NS    # internal repo pointer (WARN tier)
 TICKET_DIGITS = "2852"
+# AI-tool / vendor authorship markers -- fragment-built so the contiguous marker
+# never appears in this committed test file (else it self-trips the gate's own
+# committed-tree scan). Reassembled at runtime into throwaway fixtures.
+TOOL = "Cla" + "ude"                       # AI-tool name
+VENDOR = "anthro" + "pic"                  # AI-vendor name
+FOOTER = "Generated with " + TOOL + " Code"  # the bot auto-attribution footer
 
 
 def _git(args, cwd):
@@ -68,6 +74,60 @@ def test_kairos_module_import_path_is_block(tmp_path):
     leak = "from " + NS + ".sv_bundle_parse import convert\n"
     block, warn, _ = _scan(tmp_path, {"athanor/helper.py": leak})
     assert _has(block, "Kairos namespace"), block
+
+
+# --- the fix: AI-tool / vendor authorship footer is BLOCK (asabi ruling) ---
+
+def test_ai_tool_footer_committed_is_block(tmp_path):
+    # the real recurring leak: the bot attribution footer in a committed file
+    block, warn, _ = _scan(tmp_path, {"athanor/notes.md": "// " + FOOTER + "\n"})
+    assert _has(block, "AI-tool authorship footer"), block
+    assert _has(block, "AI-tool name"), block  # broad token net also fires
+
+
+def test_ai_vendor_coauthor_trailer_committed_is_block(tmp_path):
+    # the co-author trailer form: "<tool> <noreply@<vendor>.com>"
+    leak = "Co-Authored-By: " + TOOL + " <noreply@" + VENDOR + ".com>\n"
+    block, warn, _ = _scan(tmp_path, {"athanor/notes.md": leak})
+    assert _has(block, "AI-vendor name"), block
+
+
+def test_ai_tool_footer_in_pr_body_text_is_block():
+    # Quan's ask: a FRESH fork PR body carrying the footer must red via the
+    # PR-text surface (scan_text) -- the committed-tree scan cannot see PR
+    # metadata, and the footer is exactly what lands there. Same BLOCK_ALWAYS
+    # source of truth, so committed-tree and PR-text can never drift.
+    body = "This PR ports the branch-predictor encoder table.\n\n" + FOOTER + "\n"
+    findings = esg.scan_text(body, source="pr-body")
+    assert _has(findings, "AI-tool authorship footer"), findings
+
+
+def test_ai_tool_name_is_case_insensitive(tmp_path):
+    # footer casing varies across bots; the (?i) net must catch a lowercased form
+    block, warn, _ = _scan(tmp_path, {"athanor/x.md": "built by " + TOOL.lower() + "\n"})
+    assert _has(block, "AI-tool name"), block
+
+
+def test_ordinary_words_are_not_a_false_ai_tool_hit(tmp_path):
+    # precision: 'cla'+'ude' is a specific token -- words that merely share a
+    # prefix ('clause', 'cladding') or contain 'clude' ('included') are NOT the
+    # tool name and must never false-block a legitimate RTL/prose line.
+    clean = "the included clause of the cladding module is public\n"
+    block, warn, _ = _scan(tmp_path, {"athanor/rtl.v": clean})
+    assert not _has(block, "AI-tool name"), block
+    assert not _has(block, "AI-vendor name"), block
+
+
+def test_allowed_verdict_tools_are_not_blocked(tmp_path):
+    # The owner boundary (Quan control): the VERDICT tools -- Yosys / OpenSTA /
+    # Lean -- are public BY DESIGN (our posture names them). Only the proprietary
+    # proposal-side AI-tool/vendor markers are the leak. Naming a verdict tool in
+    # a committed receipt/README must NEVER trip the vendor class.
+    ok = "Verified with Yosys + OpenSTA; the proof was discharged in Lean.\n"
+    block, warn, _ = _scan(tmp_path, {"athanor/receipt_notes.md": ok})
+    assert not _has(block, "AI-tool name"), block
+    assert not _has(block, "AI-vendor name"), block
+    assert not _has(block, "AI-tool authorship footer"), block
 
 
 # --- tier preservation: the repo pointer stays WARN, never upgraded --------
